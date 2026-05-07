@@ -1,43 +1,242 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-    /* div{
-        border-radius: 50%;
-    } */
-    *{
-        background: rgb(51, 88, 89);
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>최적화된 쥐불놀이 불꽃 효과</title>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
-    </style>
+
+    body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        cursor: none;
+        background:
+            radial-gradient(circle at center, rgba(60, 25, 10, 0.6), rgba(5, 5, 8, 1) 70%),
+            rgb(8, 8, 10);
+    }
+
+    .fire-core {
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        pointer-events: none;
+        background: radial-gradient(circle, #ffffff 0%, #fff6a8 25%, #ff9f1a 55%, rgba(255, 50, 0, 0) 75%);
+        box-shadow:
+            0 0 18px #ffffff,
+            0 0 35px #ffd166,
+            0 0 70px #ff6b00;
+        z-index: 10;
+        will-change: transform, left, top;
+    }
+
+    .fire-trail {
+        position: absolute;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        pointer-events: none;
+        mix-blend-mode: screen;
+        opacity: 0;
+        background: radial-gradient(circle, #ffffff 0%, #ffe066 20%, #ff9f1a 45%, #ff3d00 70%, rgba(255, 0, 0, 0) 100%);
+        box-shadow:
+            0 0 12px rgba(255, 255, 255, 0.95),
+            0 0 28px rgba(255, 190, 60, 0.9),
+            0 0 58px rgba(255, 90, 0, 0.75);
+        will-change: transform, opacity;
+    }
+
+    .guide-text {
+        position: fixed;
+        left: 24px;
+        bottom: 24px;
+        color: rgba(255, 226, 180, 0.75);
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        letter-spacing: 0.04em;
+        pointer-events: none;
+    }
+</style>
 </head>
+
 <body>
-    <script>
-        document.addEventListener("mousemove", function(event){
-            const box = document.createElement("div");
-            box.style.position = "absolute";
-            box.style.width = "150px";
-            box.style.height = "150px";
-            box.style.backgroundColor = `rgb(${Math.ceil(Math.random()*200)},100, 100)`;
-            box.style.top = `${event.clientY - 100}px`;
-            box.style.left = `${event.clientX - 100}px`;
 
-            document.body.appendChild(box);
+<div class="guide-text">최적화된 쥐불놀이 불꽃 궤적</div>
 
-        });
+<script>
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
 
-        let rotate = 0;
-        function animate(){
-            requestAnimationFrame(animate);
-            let boxes = document.querySelectorAll("div");
-            rotate += 0.1;
-            boxes.forEach(function(box){
-                box.style.transform = `rotate(${rotate}deg)`;
+    let previousMouseX = mouseX;
+    let previousMouseY = mouseY;
+
+    let fireX = mouseX;
+    let fireY = mouseY;
+
+    let rotate = 0;
+
+    const trailSize = 42;
+
+    /*
+        성능 조절 핵심 값입니다.
+
+        maxTrails:
+        화면에 재사용할 불꽃 div의 최대 개수입니다.
+        값이 클수록 잔상이 풍부하지만 무거워집니다.
+
+        trailSpacing:
+        잔상 사이 간격입니다.
+        값이 작을수록 촘촘하지만 무거워집니다.
+
+        maxCreatePerMove:
+        마우스를 한 번 움직일 때 생성할 수 있는 최대 잔상 수입니다.
+        빠르게 휘둘러도 과도하게 많이 생성되지 않게 막습니다.
+    */
+    const maxTrails = 160;
+    const trailSpacing = 8;
+    const maxCreatePerMove = 10;
+    const minMoveDistance = 3;
+
+    const trails = [];
+    let trailIndex = 0;
+
+    const fireCore = document.createElement("div");
+    fireCore.classList.add("fire-core");
+    document.body.appendChild(fireCore);
+
+    function createTrailPool() {
+        for (let i = 0; i < maxTrails; i++) {
+            const trail = document.createElement("div");
+            trail.classList.add("fire-trail");
+            document.body.appendChild(trail);
+
+            trails.push({
+                element: trail,
+                x: 0,
+                y: 0,
+                opacity: 0,
+                life: 0,
+                rotate: 0
             });
         }
-        animate();
-    </script>
+    }
+
+    document.addEventListener("mousemove", function(event) {
+        previousMouseX = mouseX;
+        previousMouseY = mouseY;
+
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+
+        createSmoothTrail(previousMouseX, previousMouseY, mouseX, mouseY);
+    });
+
+    function randomNumber(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function createSmoothTrail(startX, startY, endX, endY) {
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < minMoveDistance) {
+            return;
+        }
+
+        let count = Math.floor(distance / trailSpacing);
+
+        count = Math.max(1, count);
+        count = Math.min(maxCreatePerMove, count);
+
+        for (let i = 0; i <= count; i++) {
+            const progress = i / count;
+
+            const x = startX + dx * progress;
+            const y = startY + dy * progress;
+
+            activateTrail(x, y);
+        }
+    }
+
+    function activateTrail(x, y) {
+        const trail = trails[trailIndex];
+
+        trail.x = x;
+        trail.y = y;
+        trail.opacity = 1;
+        trail.life = 34;
+        trail.rotate = randomNumber(0, 360);
+
+        trail.element.style.left = `${x - trailSize / 2}px`;
+        trail.element.style.top = `${y - trailSize / 2}px`;
+        trail.element.style.opacity = trail.opacity;
+        trail.element.style.transform = `rotate(${trail.rotate}deg)`;
+
+        trailIndex++;
+
+        if (trailIndex >= trails.length) {
+            trailIndex = 0;
+        }
+    }
+
+    function moveFireCore() {
+        fireX += (mouseX - fireX) * 0.35;
+        fireY += (mouseY - fireY) * 0.35;
+
+        rotate += 12;
+
+        fireCore.style.left = `${fireX - 17}px`;
+        fireCore.style.top = `${fireY - 17}px`;
+        fireCore.style.transform = `rotate(${rotate}deg)`;
+    }
+
+    function animateTrails() {
+        for (let i = 0; i < trails.length; i++) {
+            const trail = trails[i];
+
+            if (trail.life > 0) {
+                trail.life -= 1;
+                trail.opacity -= 0.03;
+                trail.rotate += 2.5;
+
+                if (trail.opacity < 0) {
+                    trail.opacity = 0;
+                }
+
+                trail.element.style.opacity = trail.opacity;
+                trail.element.style.transform = `rotate(${trail.rotate}deg)`;
+            }
+        }
+    }
+
+    function createIdleGlow() {
+        if (Math.random() < 0.04) {
+            activateTrail(
+                fireX + randomNumber(-3, 3),
+                fireY + randomNumber(-3, 3)
+            );
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        moveFireCore();
+        animateTrails();
+        createIdleGlow();
+    }
+
+    createTrailPool();
+    animate();
+</script>
+
 </body>
 </html>
