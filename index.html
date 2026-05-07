@@ -20,6 +20,8 @@
         background:
             radial-gradient(circle at center, rgba(60, 25, 10, 0.6), rgba(5, 5, 8, 1) 70%),
             rgb(8, 8, 10);
+        font-family: Arial, sans-serif;
+        user-select: none;
     }
 
     .fire-core {
@@ -53,22 +55,174 @@
         will-change: transform, opacity;
     }
 
-    .guide-text {
+    .game-ui {
+        position: fixed;
+        top: 24px;
+        left: 24px;
+        z-index: 100;
+        color: #fff3c4;
+        pointer-events: none;
+    }
+
+    .score {
+        font-size: 42px;
+        font-weight: 800;
+        text-shadow:
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 28px rgba(255, 120, 0, 0.9);
+    }
+
+    .info {
+        margin-top: 8px;
+        font-size: 15px;
+        color: rgba(255, 226, 180, 0.8);
+        line-height: 1.5;
+    }
+
+    .timer {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 100;
+        color: #fff3c4;
+        font-size: 34px;
+        font-weight: 800;
+        text-shadow:
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 28px rgba(255, 120, 0, 0.9);
+        pointer-events: none;
+    }
+
+    .rotation-ui {
         position: fixed;
         left: 24px;
-        bottom: 24px;
-        color: rgba(255, 226, 180, 0.75);
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        letter-spacing: 0.04em;
+        top: 112px;
+        z-index: 100;
+        color: rgba(255, 226, 180, 0.85);
         pointer-events: none;
+    }
+
+    .rotation-label {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .rotation-bar {
+        width: 220px;
+        height: 10px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 200, 120, 0.25);
+    }
+
+    .rotation-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #ff6b00, #ffcc33, #ffffff);
+        box-shadow: 0 0 18px rgba(255, 150, 0, 0.9);
+    }
+
+    .combo {
+        margin-top: 12px;
+        color: #ffdf70;
+        font-size: 18px;
+        font-weight: 700;
+        text-shadow: 0 0 16px rgba(255, 120, 0, 0.9);
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .combo.active {
+        opacity: 1;
+    }
+
+    .center-panel {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        z-index: 200;
+        transform: translate(-50%, -50%);
+        width: min(460px, calc(100vw - 40px));
+        padding: 34px 30px;
+        border-radius: 28px;
+        text-align: center;
+        color: #fff3c4;
+        background: rgba(20, 10, 5, 0.72);
+        border: 1px solid rgba(255, 190, 80, 0.35);
+        box-shadow:
+            0 0 30px rgba(255, 110, 0, 0.25),
+            inset 0 0 40px rgba(255, 160, 60, 0.08);
+        backdrop-filter: blur(12px);
+    }
+
+    .center-panel h1 {
+        font-size: 32px;
+        margin-bottom: 12px;
+    }
+
+    .center-panel p {
+        font-size: 15px;
+        line-height: 1.7;
+        color: rgba(255, 226, 180, 0.82);
+        margin-bottom: 24px;
+    }
+
+    .center-panel button {
+        border: none;
+        border-radius: 999px;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #2b1300;
+        background: linear-gradient(135deg, #fff3b0, #ffb347, #ff6b00);
+        box-shadow:
+            0 0 18px rgba(255, 180, 60, 0.8),
+            0 8px 28px rgba(255, 80, 0, 0.35);
+        cursor: pointer;
+    }
+
+    .center-panel.hidden {
+        display: none;
     }
 </style>
 </head>
 
 <body>
 
-<div class="guide-text">사이버 쥐불놀이를 즐겨보세요!</div>
+<div class="game-ui">
+    <div class="score" id="scoreText">0</div>
+    <div class="info">
+        마우스를 원형으로 돌려야 점수를 얻습니다.<br>
+        좌우로 흔들기만 하면 점수가 올라가지 않습니다.
+    </div>
+</div>
+
+<div class="timer" id="timerText">30</div>
+
+<div class="rotation-ui">
+    <div class="rotation-label" id="rotationLabel">회전 진행도 0%</div>
+    <div class="rotation-bar">
+        <div class="rotation-fill" id="rotationFill"></div>
+    </div>
+    <div class="combo" id="comboText">COMBO x1.00</div>
+</div>
+
+<div class="center-panel" id="startPanel">
+    <h1>쥐불놀이 점수 게임</h1>
+    <p>
+        제한 시간 30초 동안 마우스를 원형으로 돌리세요.<br>
+        거의 한 바퀴를 완성할 때마다 기본 100점을 얻습니다.
+    </p>
+    <button id="startButton">게임 시작</button>
+</div>
+
+<div class="center-panel hidden" id="endPanel">
+    <h1>게임 종료</h1>
+    <p id="resultText">최종 점수: 0점</p>
+    <button id="restartButton">다시 시작</button>
+</div>
 
 <script>
     let mouseX = window.innerWidth / 2;
@@ -82,27 +236,62 @@
 
     let rotate = 0;
 
+    let score = 0;
+    let timeLeft = 30;
+    let isPlaying = false;
+
+    let combo = 1;
+    let comboTimer = 0;
+    let gameTimer = null;
+
     const trailSize = 42;
-
-    /*
-        성능 조절 핵심 값입니다.
-
-        maxTrails:
-        화면에 재사용할 불꽃 div의 최대 개수입니다.
-        값이 클수록 잔상이 풍부하지만 무거워집니다.
-
-        trailSpacing:
-        잔상 사이 간격입니다.
-        값이 작을수록 촘촘하지만 무거워집니다.
-
-        maxCreatePerMove:
-        마우스를 한 번 움직일 때 생성할 수 있는 최대 잔상 수입니다.
-        빠르게 휘둘러도 과도하게 많이 생성되지 않게 막습니다.
-    */
     const maxTrails = 160;
     const trailSpacing = 8;
     const maxCreatePerMove = 10;
     const minMoveDistance = 3;
+
+    const swingScore = 100;
+
+    /*
+        원형 움직임 감지용 변수입니다.
+
+        circleCenterX, circleCenterY:
+        회전 중심점입니다. 게임 시작 시 화면 중앙으로 설정됩니다.
+
+        accumulatedAngle:
+        마우스가 중심점을 기준으로 얼마나 회전했는지 누적합니다.
+
+        requiredAngle:
+        점수를 얻기 위해 필요한 회전량입니다.
+        Math.PI * 2는 360도, 즉 한 바퀴입니다.
+        여기서는 0.85바퀴 정도만 돌아도 인정되게 설정했습니다.
+
+        minRadius, maxRadius:
+        너무 중심에 가깝거나 너무 바깥쪽에서 움직이면 회전으로 인정하지 않습니다.
+    */
+    let circleCenterX = window.innerWidth / 2;
+    let circleCenterY = window.innerHeight / 2;
+
+    let previousAngle = null;
+    let accumulatedAngle = 0;
+    let rotationDirection = 0;
+
+    const requiredAngle = Math.PI * 2 * 0.85;
+    const minRadius = 60;
+    const maxRadius = 420;
+
+    const scoreText = document.getElementById("scoreText");
+    const timerText = document.getElementById("timerText");
+    const rotationLabel = document.getElementById("rotationLabel");
+    const rotationFill = document.getElementById("rotationFill");
+    const comboText = document.getElementById("comboText");
+
+    const startPanel = document.getElementById("startPanel");
+    const endPanel = document.getElementById("endPanel");
+    const resultText = document.getElementById("resultText");
+
+    const startButton = document.getElementById("startButton");
+    const restartButton = document.getElementById("restartButton");
 
     const trails = [];
     let trailIndex = 0;
@@ -119,8 +308,6 @@
 
             trails.push({
                 element: trail,
-                x: 0,
-                y: 0,
                 opacity: 0,
                 life: 0,
                 rotate: 0
@@ -136,10 +323,118 @@
         mouseY = event.clientY;
 
         createSmoothTrail(previousMouseX, previousMouseY, mouseX, mouseY);
+
+        if (isPlaying) {
+            checkCircularMotion(mouseX, mouseY);
+        }
     });
 
     function randomNumber(min, max) {
         return Math.random() * (max - min) + min;
+    }
+
+    function checkCircularMotion(x, y) {
+        const dx = x - circleCenterX;
+        const dy = y - circleCenterY;
+
+        const radius = Math.sqrt(dx * dx + dy * dy);
+
+        /*
+            회전 반경이 너무 작거나 크면 원형 움직임으로 인정하지 않습니다.
+            좌우로 짧게 흔드는 움직임을 여기서 대부분 걸러낼 수 있습니다.
+        */
+        if (radius < minRadius || radius > maxRadius) {
+            previousAngle = null;
+            accumulatedAngle *= 0.96;
+            updateRotationUI();
+            return;
+        }
+
+        const currentAngle = Math.atan2(dy, dx);
+
+        if (previousAngle === null) {
+            previousAngle = currentAngle;
+            return;
+        }
+
+        let angleDifference = currentAngle - previousAngle;
+
+        /*
+            각도가 -π에서 π로 넘어갈 때 생기는 튐 현상을 보정합니다.
+        */
+        if (angleDifference > Math.PI) {
+            angleDifference -= Math.PI * 2;
+        }
+
+        if (angleDifference < -Math.PI) {
+            angleDifference += Math.PI * 2;
+        }
+
+        previousAngle = currentAngle;
+
+        /*
+            너무 작은 움직임은 노이즈로 보고 무시합니다.
+            너무 큰 각도 변화는 순간이동처럼 보이므로 무시합니다.
+        */
+        if (Math.abs(angleDifference) < 0.015) {
+            return;
+        }
+
+        if (Math.abs(angleDifference) > 0.9) {
+            return;
+        }
+
+        const currentDirection = angleDifference > 0 ? 1 : -1;
+
+        /*
+            회전 방향이 계속 유지될 때만 누적합니다.
+            방향이 갑자기 반대로 바뀌면 좌우 흔들기일 가능성이 크므로 진행도를 줄입니다.
+        */
+        if (rotationDirection === 0) {
+            rotationDirection = currentDirection;
+        }
+
+        if (currentDirection === rotationDirection) {
+            accumulatedAngle += Math.abs(angleDifference);
+        } else {
+            accumulatedAngle *= 0.72;
+            rotationDirection = currentDirection;
+        }
+
+        updateRotationUI();
+
+        if (accumulatedAngle >= requiredAngle) {
+            addCircleScore();
+            accumulatedAngle = 0;
+            previousAngle = null;
+            rotationDirection = 0;
+            updateRotationUI();
+        }
+    }
+
+    function addCircleScore() {
+        /*
+            보너스 계수를 낮게 유지합니다.
+            연속으로 원형 회전을 성공하면 조금씩만 올라갑니다.
+        */
+        combo += 0.04;
+        combo = Math.min(combo, 1.6);
+        comboTimer = 70;
+
+        const gainedScore = Math.floor(swingScore * combo);
+        score += gainedScore;
+
+        scoreText.textContent = score;
+        comboText.textContent = `COMBO x${combo.toFixed(2)}`;
+        comboText.classList.add("active");
+    }
+
+    function updateRotationUI() {
+        const progress = Math.min(accumulatedAngle / requiredAngle, 1);
+        const percent = Math.floor(progress * 100);
+
+        rotationFill.style.width = `${percent}%`;
+        rotationLabel.textContent = `회전 진행도 ${percent}%`;
     }
 
     function createSmoothTrail(startX, startY, endX, endY) {
@@ -158,7 +453,6 @@
 
         for (let i = 0; i <= count; i++) {
             const progress = i / count;
-
             const x = startX + dx * progress;
             const y = startY + dy * progress;
 
@@ -169,8 +463,6 @@
     function activateTrail(x, y) {
         const trail = trails[trailIndex];
 
-        trail.x = x;
-        trail.y = y;
         trail.opacity = 1;
         trail.life = 34;
         trail.rotate = randomNumber(0, 360);
@@ -217,8 +509,27 @@
         }
     }
 
+    function updateCombo() {
+        if (!isPlaying) {
+            return;
+        }
+
+        if (comboTimer > 0) {
+            comboTimer -= 1;
+        } else {
+            combo -= 0.01;
+
+            if (combo <= 1) {
+                combo = 1;
+                comboText.classList.remove("active");
+            } else {
+                comboText.textContent = `COMBO x${combo.toFixed(2)}`;
+            }
+        }
+    }
+
     function createIdleGlow() {
-        if (Math.random() < 0.04) {
+        if (Math.random() < 0.035) {
             activateTrail(
                 fireX + randomNumber(-3, 3),
                 fireY + randomNumber(-3, 3)
@@ -226,13 +537,67 @@
         }
     }
 
+    function resetCircularMotion() {
+        circleCenterX = window.innerWidth / 2;
+        circleCenterY = window.innerHeight / 2;
+        previousAngle = null;
+        accumulatedAngle = 0;
+        rotationDirection = 0;
+        updateRotationUI();
+    }
+
+    function startGame() {
+        score = 0;
+        timeLeft = 30;
+        combo = 1;
+        comboTimer = 0;
+        isPlaying = true;
+
+        scoreText.textContent = score;
+        timerText.textContent = timeLeft;
+        comboText.classList.remove("active");
+
+        resetCircularMotion();
+
+        startPanel.classList.add("hidden");
+        endPanel.classList.add("hidden");
+
+        clearInterval(gameTimer);
+
+        gameTimer = setInterval(function() {
+            timeLeft -= 1;
+            timerText.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function endGame() {
+        isPlaying = false;
+        clearInterval(gameTimer);
+
+        resultText.textContent = `최종 점수: ${score}점`;
+        endPanel.classList.remove("hidden");
+        comboText.classList.remove("active");
+    }
+
     function animate() {
         requestAnimationFrame(animate);
 
         moveFireCore();
         animateTrails();
+        updateCombo();
         createIdleGlow();
     }
+
+    window.addEventListener("resize", function() {
+        resetCircularMotion();
+    });
+
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", startGame);
 
     createTrailPool();
     animate();
