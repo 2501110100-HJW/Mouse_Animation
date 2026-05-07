@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>즐거운 사이버 쥐불놀이</title>
+<title>사이버 쥐불놀이</title>
 
 <style>
     * {
@@ -93,42 +93,58 @@
         pointer-events: none;
     }
 
+    /* 중앙 상단 회전 진행도 UI */
     .rotation-ui {
         position: fixed;
-        left: 24px;
-        top: 150px;
-        z-index: 100;
-        color: rgba(255, 226, 180, 0.85);
+        left: 50%;
+        top: 26px;
+        transform: translateX(-50%);
+        z-index: 120;
+        width: 360px;
+        padding: 16px 18px;
+        border-radius: 22px;
+        text-align: center;
+        color: rgba(255, 238, 190, 0.95);
         pointer-events: none;
+        background: rgba(20, 10, 5, 0.48);
+        border: 1px solid rgba(255, 190, 80, 0.3);
+        box-shadow:
+            0 0 24px rgba(255, 110, 0, 0.18),
+            inset 0 0 30px rgba(255, 160, 60, 0.06);
+        backdrop-filter: blur(10px);
     }
 
     .rotation-label {
-        font-size: 14px;
-        margin-bottom: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 0 12px rgba(255, 120, 0, 0.8);
     }
 
     .rotation-bar {
-        width: 220px;
-        height: 10px;
+        width: 100%;
+        height: 13px;
         border-radius: 999px;
         overflow: hidden;
         background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 200, 120, 0.25);
+        border: 1px solid rgba(255, 200, 120, 0.32);
     }
 
     .rotation-fill {
         width: 0%;
         height: 100%;
         border-radius: 999px;
-        background: linear-gradient(90deg, #ff6b00, #ffcc33, #ffffff);
-        box-shadow: 0 0 18px rgba(255, 150, 0, 0.9);
+        background: linear-gradient(90deg, #ff4d00, #ffcc33, #ffffff);
+        box-shadow:
+            0 0 14px rgba(255, 255, 255, 0.8),
+            0 0 24px rgba(255, 150, 0, 0.9);
     }
 
     .combo {
-        margin-top: 12px;
+        margin-top: 10px;
         color: #ffdf70;
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 800;
         text-shadow: 0 0 16px rgba(255, 120, 0, 0.9);
         opacity: 0;
         transition: opacity 0.2s;
@@ -186,6 +202,46 @@
     .center-panel.hidden {
         display: none;
     }
+
+    /* 3초 카운트다운 */
+    .countdown {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        z-index: 300;
+        transform: translate(-50%, -50%);
+        font-size: 120px;
+        font-weight: 900;
+        color: #fff4b8;
+        opacity: 0;
+        pointer-events: none;
+        text-shadow:
+            0 0 16px rgba(255, 255, 255, 0.95),
+            0 0 42px rgba(255, 150, 0, 1),
+            0 0 90px rgba(255, 80, 0, 0.8);
+    }
+
+    .countdown.active {
+        opacity: 1;
+        animation: countdownPop 0.85s ease forwards;
+    }
+
+    @keyframes countdownPop {
+        0% {
+            transform: translate(-50%, -50%) scale(0.55);
+            opacity: 0;
+        }
+
+        25% {
+            transform: translate(-50%, -50%) scale(1.12);
+            opacity: 1;
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+    }
 </style>
 </head>
 
@@ -210,10 +266,10 @@
 </div>
 
 <div class="center-panel" id="startPanel">
-    <h1>쥐불놀이 게임</h1>
+    <h1>쥐불놀이 점수 게임</h1>
     <p>
-        제한 시간 30초 동안 마우스로 불을 돌리세요!<br>
-        한 바퀴를 완성할 때마다 기본 20점을 얻습니다.
+        제한 시간 30초 동안 마우스를 원형으로 돌리세요.<br>
+        거의 한 바퀴를 완성할 때마다 20점을 얻습니다.
     </p>
     <button id="startButton">게임 시작</button>
 </div>
@@ -224,10 +280,10 @@
     <button id="restartButton">다시 시작</button>
 </div>
 
+<div class="countdown" id="countdownText">3</div>
+
 <script>
-
-
-    function createStars() {
+function createStars() {
     for (let i = 0; i < 80; i++) {
         const star = document.createElement("div");
         star.style.position = "absolute";
@@ -239,8 +295,9 @@
         star.style.top = `${Math.random() * window.innerHeight}px`;
         document.body.appendChild(star);
     }
-}   
-createStars();
+}
+    createStars();
+
 
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
@@ -255,11 +312,14 @@ createStars();
 
     let score = 0;
     let timeLeft = 30;
+
     let isPlaying = false;
+    let isCountingDown = false;
 
     let combo = 1;
     let comboTimer = 0;
     let gameTimer = null;
+    let countdownTimer = null;
 
     const trailSize = 42;
     const maxTrails = 160;
@@ -267,25 +327,9 @@ createStars();
     const maxCreatePerMove = 10;
     const minMoveDistance = 3;
 
+    /* 한 바퀴 성공 시 기본 점수 */
     const swingScore = 20;
 
-    /*
-        원형 움직임 감지용 변수입니다.
-
-        circleCenterX, circleCenterY:
-        회전 중심점입니다. 게임 시작 시 화면 중앙으로 설정됩니다.
-
-        accumulatedAngle:
-        마우스가 중심점을 기준으로 얼마나 회전했는지 누적합니다.
-
-        requiredAngle:
-        점수를 얻기 위해 필요한 회전량입니다.
-        Math.PI * 2는 360도, 즉 한 바퀴입니다.
-        여기서는 0.85바퀴 정도만 돌아도 인정되게 설정했습니다.
-
-        minRadius, maxRadius:
-        너무 중심에 가깝거나 너무 바깥쪽에서 움직이면 회전으로 인정하지 않습니다.
-    */
     let circleCenterX = window.innerWidth / 2;
     let circleCenterY = window.innerHeight / 2;
 
@@ -309,6 +353,7 @@ createStars();
 
     const startButton = document.getElementById("startButton");
     const restartButton = document.getElementById("restartButton");
+    const countdownText = document.getElementById("countdownText");
 
     const trails = [];
     let trailIndex = 0;
@@ -341,7 +386,7 @@ createStars();
 
         createSmoothTrail(previousMouseX, previousMouseY, mouseX, mouseY);
 
-        if (isPlaying) {
+        if (isPlaying && !isCountingDown) {
             checkCircularMotion(mouseX, mouseY);
         }
     });
@@ -356,10 +401,6 @@ createStars();
 
         const radius = Math.sqrt(dx * dx + dy * dy);
 
-        /*
-            회전 반경이 너무 작거나 크면 원형 움직임으로 인정하지 않습니다.
-            좌우로 짧게 흔드는 움직임을 여기서 대부분 걸러낼 수 있습니다.
-        */
         if (radius < minRadius || radius > maxRadius) {
             previousAngle = null;
             accumulatedAngle *= 0.96;
@@ -376,9 +417,6 @@ createStars();
 
         let angleDifference = currentAngle - previousAngle;
 
-        /*
-            각도가 -π에서 π로 넘어갈 때 생기는 튐 현상을 보정합니다.
-        */
         if (angleDifference > Math.PI) {
             angleDifference -= Math.PI * 2;
         }
@@ -389,10 +427,6 @@ createStars();
 
         previousAngle = currentAngle;
 
-        /*
-            너무 작은 움직임은 노이즈로 보고 무시합니다.
-            너무 큰 각도 변화는 순간이동처럼 보이므로 무시합니다.
-        */
         if (Math.abs(angleDifference) < 0.015) {
             return;
         }
@@ -403,10 +437,6 @@ createStars();
 
         const currentDirection = angleDifference > 0 ? 1 : -1;
 
-        /*
-            회전 방향이 계속 유지될 때만 누적합니다.
-            방향이 갑자기 반대로 바뀌면 좌우 흔들기일 가능성이 크므로 진행도를 줄입니다.
-        */
         if (rotationDirection === 0) {
             rotationDirection = currentDirection;
         }
@@ -422,18 +452,16 @@ createStars();
 
         if (accumulatedAngle >= requiredAngle) {
             addCircleScore();
+
             accumulatedAngle = 0;
             previousAngle = null;
             rotationDirection = 0;
+
             updateRotationUI();
         }
     }
 
     function addCircleScore() {
-        /*
-            보너스 계수를 낮게 유지합니다.
-            연속으로 원형 회전을 성공하면 조금씩만 올라갑니다.
-        */
         combo += 0.04;
         combo = Math.min(combo, 1.6);
         comboTimer = 70;
@@ -527,7 +555,7 @@ createStars();
     }
 
     function updateCombo() {
-        if (!isPlaying) {
+        if (!isPlaying || isCountingDown) {
             return;
         }
 
@@ -563,12 +591,14 @@ createStars();
         updateRotationUI();
     }
 
-    function startGame() {
+    function prepareGame() {
         score = 0;
         timeLeft = 30;
         combo = 1;
         comboTimer = 0;
-        isPlaying = true;
+
+        isPlaying = false;
+        isCountingDown = true;
 
         scoreText.textContent = score;
         timerText.textContent = timeLeft;
@@ -578,6 +608,54 @@ createStars();
 
         startPanel.classList.add("hidden");
         endPanel.classList.add("hidden");
+
+        clearInterval(gameTimer);
+        clearInterval(countdownTimer);
+
+        startCountdown();
+    }
+
+    function startCountdown() {
+        let count = 3;
+
+        countdownText.textContent = count;
+        countdownText.classList.remove("active");
+
+        void countdownText.offsetWidth;
+        countdownText.classList.add("active");
+
+        countdownTimer = setInterval(function() {
+            count -= 1;
+
+            if (count > 0) {
+                countdownText.textContent = count;
+                countdownText.classList.remove("active");
+
+                void countdownText.offsetWidth;
+                countdownText.classList.add("active");
+            } else {
+                clearInterval(countdownTimer);
+
+                countdownText.textContent = "START!";
+                countdownText.classList.remove("active");
+
+                void countdownText.offsetWidth;
+                countdownText.classList.add("active");
+
+                setTimeout(function() {
+                    countdownText.classList.remove("active");
+                    countdownText.style.opacity = 0;
+                    startGame();
+                }, 700);
+            }
+        }, 1000);
+    }
+
+    function startGame() {
+        isCountingDown = false;
+        isPlaying = true;
+
+        resetCircularMotion();
 
         clearInterval(gameTimer);
 
@@ -593,7 +671,13 @@ createStars();
 
     function endGame() {
         isPlaying = false;
+        isCountingDown = false;
+
         clearInterval(gameTimer);
+        clearInterval(countdownTimer);
+
+        countdownText.classList.remove("active");
+        countdownText.style.opacity = 0;
 
         resultText.textContent = `최종 점수: ${score}점`;
         endPanel.classList.remove("hidden");
@@ -613,8 +697,8 @@ createStars();
         resetCircularMotion();
     });
 
-    startButton.addEventListener("click", startGame);
-    restartButton.addEventListener("click", startGame);
+    startButton.addEventListener("click", prepareGame);
+    restartButton.addEventListener("click", prepareGame);
 
     createTrailPool();
     animate();
