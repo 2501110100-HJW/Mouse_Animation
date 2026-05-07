@@ -225,6 +225,23 @@
 </div>
 
 <script>
+
+
+    function createStars() {
+    for (let i = 0; i < 80; i++) {
+        const star = document.createElement("div");
+        star.style.position = "absolute";
+        star.style.width = "3px";
+        star.style.height = "3px";
+        star.style.borderRadius = "50%";
+        star.style.background = "rgba(255,255,255,0.6)";
+        star.style.left = `${Math.random() * window.innerWidth}px`;
+        star.style.top = `${Math.random() * window.innerHeight}px`;
+        document.body.appendChild(star);
+    }
+}   
+createStars();
+
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
 
